@@ -115,10 +115,43 @@ def svn_revert(rootdir, svnurl, extinfo):
         os.system(cmd)
 
 
+def onerror(func, path, exc_info):
+    """
+    Error handler for ``shutil.rmtree``.
+
+    If the error is due to an access error (read only file)
+    it attempts to add write permission and then retries.
+
+    If the error is for another reason it re-raises the error.
+
+    Usage : ``shutil.rmtree(path, onerror=onerror)``
+    """
+    import stat
+    if not os.access(path, os.W_OK):
+        # Is the error an access error ?
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
+
+
+
 def svn_remove(rootdir, svnurl, extinfo):
+    print("remove list:\n")
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:], pp[1][1])
-        shutil.rmtree(os.path.normpath(abspath))
+        fullpath = os.path.normpath(abspath)
+        print('\t' + fullpath)
+
+    ans = raw_input("\nAre you sure remove the list[y/n]?")
+    if ans == 'y' or ans == "yes":
+        for pp in extinfo:
+            abspath = os.path.join(rootdir, pp[0][1:], pp[1][1])
+            fullpath = os.path.normpath(abspath)
+            if os.path.isdir(fullpath):
+                shutil.rmtree(fullpath)
+            else:
+                os.remove(fullpath)
 
 
 def svn_info(rootdir, svnurl, extinfo):
@@ -131,7 +164,7 @@ def svn_info(rootdir, svnurl, extinfo):
 
 def svn_list(rootdir, svnurl, extinfo):
     for pp in extinfo:
-        path = os.path.join(pp[0] + pp[1][1])
+        path = os.path.normpath(os.path.join(rootdir, pp[0], pp[1][1]))
         print(path)
 
 
