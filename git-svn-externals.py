@@ -35,12 +35,8 @@ def git_svn_url():
             return line.split(' ', 1)[1]
 
 
-def git_svn_repo_root():
-    tmp = os.system("ls -d .git > /dev/null")
-    if tmp == 0:
-        return True
-    else:
-        return False
+def git_svn_repo_root(rootdir):
+    return os.path.isdir(os.path.join(rootdir, ".git"))
 
 
 def read_git_svn_show_externals(filepath):
@@ -173,14 +169,15 @@ if __name__ == "__main__":
         sys.exit(1)
 
     svnurl = git_svn_url()
-    if svnurl == "" or not git_svn_repo_root():
-        print("[error] is not git_svn_repo or git_svn_repo_root")
-        sys.exit(1)
-
     curdir = os.getcwd()
     rootdir = os.getcwd()
     command = sys.argv[1]
     filepath= sys.argv[2]
+
+    if svnurl == "" or not git_svn_repo_root(rootdir):
+        print("[error] is not git_svn_repo or git_svn_repo_root")
+        sys.exit(1)
+
     extinfo = read_git_svn_show_externals(filepath)
 
     #for ll in extinfo:
