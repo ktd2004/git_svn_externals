@@ -13,6 +13,7 @@ git svn externals simple tool
 
 
 # future todo
+  * run into repo sub directory. 
   * run from 'git svn show-externals' command
   * run with svn external a file not a directory.
   * ...
