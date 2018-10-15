@@ -65,18 +65,21 @@ def read_git_svn_show_externals(filepath):
 
 
 def svn_path_normpath(svnpath):
+    str = ""
     if svnpath.startswith("svn:/"):
-        return "svn:/" + os.path.normpath(svnpath[5:])
+        str = "svn:/" + os.path.normpath(svnpath[5:])
     elif svnpath.startswith("svn+ssh:/"):
-        return "svn+ssh:/" + os.path.normpath(svnpath[9:])
+        str = "svn+ssh:/" + os.path.normpath(svnpath[9:])
     elif svnpath.startswith("file:/"):
-        return "file:/" + os.path.normpath(svnpath[6:])
+        str = "file:/" + os.path.normpath(svnpath[6:])
     elif svnpath.startswith("http:/"):
-        return "http:/" + os.path.normpath(svnpath[6:])
+        str = "http:/" + os.path.normpath(svnpath[6:])
     elif svnpath.startswith("https:/"):
-        return "https:/" + os.path.normpath(svnpath[7:])
+        str =  "https:/" + os.path.normpath(svnpath[7:])
     else:
         return ""
+
+    return str.replace(os.sep, '/')
 
 
 def svn_checkout(rootdir, svnurl, extinfo):
@@ -114,9 +117,8 @@ def svn_revert(rootdir, svnurl, extinfo):
 
 def svn_remove(rootdir, svnurl, extinfo):
     for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        os.chdir(abspath)
-        shutil.rmtree(pp[1][1])
+        abspath = os.path.join(rootdir, pp[0][1:], pp[1][1])
+        shutil.rmtree(os.path.normpath(abspath))
 
 
 def svn_info(rootdir, svnurl, extinfo):
