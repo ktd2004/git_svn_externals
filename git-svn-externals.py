@@ -7,6 +7,7 @@
 # Distributed under terms of the MIT license.
 import sys
 import os
+import shutil
 import subprocess
 
 
@@ -115,6 +116,13 @@ def svn_revert(rootdir, svnurl, extinfo):
         os.system(cmd)
 
 
+def svn_remove(rootdir, svnurl, extinfo):
+    for pp in extinfo:
+        abspath = os.path.join(rootdir, pp[0][1:])
+        os.chdir(abspath)
+        shutil.rmtree(pp[1][1])
+
+
 def svn_info(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
@@ -123,9 +131,22 @@ def svn_info(rootdir, svnurl, extinfo):
         os.system(cmd)
 
 
+def svn_list(rootdir, svnurl, extinfo):
+    for pp in extinfo:
+        path = os.path.join(pp[0] + pp[1][1])
+        print(path)
+
+
 def printHelp():
     print("[info] git svn externals tool")
-    print("[usage] git-svn-externals.py {checkout|update|revert|status|info} git_svn_show_externals-file")
+    print("[usage] git-svn-externals.py subcommand git_svn_show_externals-file")
+    print("    checkout : ")
+    print("    update : ")
+    print("    status : ")
+    print("    revert : ")
+    print("    remove : ")
+    print("    info : ")
+    print("    list : ")
 
 
 
@@ -173,8 +194,12 @@ if __name__ == "__main__":
         svn_status(rootdir, svnurl, extinfo)
     elif command == "revert":
         svn_revert(rootdir, svnurl, extinfo)
+    elif command == "remove":
+        svn_remove(rootdir, svnurl, extinfo)
     elif command == "info":
         svn_info(rootdir, svnurl, extinfo)
+    elif command == "list":
+        svn_list(rootdir, svnurl, extinfo)
     else:
         print("[error] invalid subcommand")
 
