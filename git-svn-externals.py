@@ -115,10 +115,17 @@ def svn_revert(rootdir, svnurl, extinfo):
         os.system(cmd)
 
 
+def svn_info(rootdir, svnurl, extinfo):
+    for pp in extinfo:
+        abspath = os.path.join(rootdir, pp[0][1:])
+        os.chdir(abspath)
+        cmd = "svn info %s" % pp[1][1]
+        os.system(cmd)
+
 
 def printHelp():
     print("[info] git svn externals tool")
-    print("[usage] git-svn-externals.py {checkout|update|revert|status} git_svn_show_externals-file")
+    print("[usage] git-svn-externals.py {checkout|update|revert|status|info} git_svn_show_externals-file")
 
 
 
@@ -166,6 +173,8 @@ if __name__ == "__main__":
         svn_status(rootdir, svnurl, extinfo)
     elif command == "revert":
         svn_revert(rootdir, svnurl, extinfo)
+    elif command == "info":
+        svn_info(rootdir, svnurl, extinfo)
     else:
         print("[error] invalid subcommand")
 
