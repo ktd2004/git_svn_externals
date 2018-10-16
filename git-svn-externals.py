@@ -49,7 +49,10 @@ def git_svn_find_root(cur):
         rootdir = parent
 
 
-
+## extinfo struct
+# [0] : base directory in working root directory.
+# [1] : base svn url in svn repository.
+# [2] : target directory in working root directory.
 def read_git_svn_show_externals(inf):
     basedir = ""
     extinfo = []
@@ -66,7 +69,8 @@ def read_git_svn_show_externals(inf):
             basedir = line.split(' ', 1)[1]
         else:
             if basedir != "":
-                extinfo.append([basedir, line.split(' ', 1)])
+                exi = line.split(' ', 1)
+                extinfo.append([basedir, exi[0], exi[1]])
 
     return extinfo
 
@@ -96,8 +100,8 @@ def svn_checkout(rootdir, svnurl, extinfo):
         if not os.path.exists(abspath):
             os.makedirs(abspath)
         os.chdir(abspath)
-        svnuuu = svn_path_normpath(svnurl + pp[1][0])
-        cmd = "svn checkout %s %s" % (svnuuu, pp[1][1])
+        svnuuu = svn_path_normpath(svnurl + pp[1])
+        cmd = "svn checkout %s %s" % (svnuuu, pp[2])
         print(cmd)
         os.system(cmd)
 
@@ -105,65 +109,86 @@ def svn_checkout(rootdir, svnurl, extinfo):
 def svn_update(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
+        tarpath = pp[2]
+        if not os.path.exists(os.path.join(abspath, tarpath)):
+            continue
         os.chdir(abspath)
-        cmd = "svn update %s" % pp[1][1]
-        os.system(cmd)
-
-
-def svn_switch(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        os.chdir(abspath)
-        svnuuu = svn_path_normpath(svnurl + pp[1][0])
-        cmd = "svn switch %s %s" % (svnuuu, pp[1][1])
+        cmd = "svn update %s" % tarpath
         os.system(cmd)
 
 
 def svn_status(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
+        tarpath = pp[2]
+        if not os.path.exists(os.path.join(abspath, tarpath)):
+            continue
         os.chdir(abspath)
-        cmd = "svn status %s" % pp[1][1]
+        cmd = "svn status %s" % tarpath
         os.system(cmd)
 
 
 def svn_remove(rootdir, svnurl, extinfo):
     print("remove list:\n")
     for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:], pp[1][1])
+        abspath = os.path.join(rootdir, pp[0][1:], pp[2])
         fullpath = os.path.normpath(abspath)
+        if not os.path.exists(fullpath):
+            continue
         print('\t' + fullpath)
 
     ans = raw_input("\nAre you sure remove the list[y/n]?")
     if ans == 'y' or ans == "yes":
         for pp in extinfo:
-            abspath = os.path.join(rootdir, pp[0][1:], pp[1][1])
+            abspath = os.path.join(rootdir, pp[0][1:], pp[2])
             fullpath = os.path.normpath(abspath)
+            if not os.path.exists(fullpath):
+                continue
             if os.path.isdir(fullpath):
                 shutil.rmtree(fullpath)
             else:
                 os.remove(fullpath)
 
 
+def svn_switch(rootdir, svnurl, extinfo):
+    for pp in extinfo:
+        abspath = os.path.join(rootdir, pp[0][1:])
+        tarpath = pp[2]
+        if not os.path.exists(os.path.join(abspath, tarpath)):
+            continue
+        os.chdir(abspath)
+        svnuuu = svn_path_normpath(svnurl + pp[1])
+        cmd = "svn switch %s %s" % (svnuuu, tarpath)
+        os.system(cmd)
+
+
 def svn_revert(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
+        tarpath = pp[2]
+        if not os.path.exists(os.path.join(abspath, tarpath)):
+            continue
         os.chdir(abspath)
-        cmd = "svn revert -R %s" % pp[1][1]
+        cmd = "svn revert -R %s" % tarpath
         os.system(cmd)
 
 
 def svn_info(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
+        tarpath = pp[2]
+        if not os.path.exists(os.path.join(abspath, tarpath)):
+            continue
         os.chdir(abspath)
-        cmd = "svn info %s" % pp[1][1]
+        cmd = "svn info %s" % tarpath
         os.system(cmd)
 
 
 def svn_list(rootdir, svnurl, extinfo):
     for pp in extinfo:
-        path = os.path.normpath(os.path.join(rootdir, pp[0], pp[1][1]))
+        path = os.path.normpath(os.path.join(rootdir, pp[0], pp[2]))
+        if not os.path.exists(path):
+            continue
         print(path)
 
 
@@ -173,9 +198,9 @@ def printHelp():
     print("subcommand")
     print("    checkout|co : ")
     print("    update|up : ")
-    print("    switch|sw : ")
     print("    status|st : ")
     print("    remove|rm : ")
+    print("    switch|sw : ")
     print("    revert : ")
     print("    info : ")
     print("    list : ")
@@ -216,10 +241,10 @@ if __name__ == "__main__":
         inf = open(filepath, "r")
 
 
-    #print("svnurl : ", svnurl)
     #print("rootdir : ", rootdir)
+    #print("svnurl : ", svnurl)
 
-    if not svnurl or rootdir == "":
+    if not svnurl or not rootdir:
         print("[error] is not git_svn_repo or git_svn_repo_root")
         sys.exit(1)
 
@@ -232,12 +257,12 @@ if __name__ == "__main__":
         svn_checkout(rootdir, svnurl, extinfo)
     elif command == "update" or command == "up":
         svn_update(rootdir, svnurl, extinfo)
-    elif command == "switch" or command == "sw":
-        svn_switch(rootdir, svnurl, extinfo)
     elif command == "status" or command == "st":
         svn_status(rootdir, svnurl, extinfo)
     elif command == "remove" or command == "rm":
         svn_remove(rootdir, svnurl, extinfo)
+    elif command == "switch" or command == "sw":
+        svn_switch(rootdir, svnurl, extinfo)
     elif command == "revert":
         svn_revert(rootdir, svnurl, extinfo)
     elif command == "info":
