@@ -105,41 +105,21 @@ def svn_update(rootdir, svnurl, extinfo):
         os.system(cmd)
 
 
+def svn_switch(rootdir, svnurl, extinfo):
+    for pp in extinfo:
+        abspath = os.path.join(rootdir, pp[0][1:])
+        os.chdir(abspath)
+        svnuuu = svn_path_normpath(svnurl + pp[1][0])
+        cmd = "svn switch %s %s" % (svnuuu, pp[1][1])
+        os.system(cmd)
+
+
 def svn_status(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
         os.chdir(abspath)
         cmd = "svn status %s" % pp[1][1]
         os.system(cmd)
-
-
-def svn_revert(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        os.chdir(abspath)
-        cmd = "svn revert -R %s" % pp[1][1]
-        os.system(cmd)
-
-
-def onerror(func, path, exc_info):
-    """
-    Error handler for ``shutil.rmtree``.
-
-    If the error is due to an access error (read only file)
-    it attempts to add write permission and then retries.
-
-    If the error is for another reason it re-raises the error.
-
-    Usage : ``shutil.rmtree(path, onerror=onerror)``
-    """
-    import stat
-    if not os.access(path, os.W_OK):
-        # Is the error an access error ?
-        os.chmod(path, stat.S_IWUSR)
-        func(path)
-    else:
-        raise
-
 
 
 def svn_remove(rootdir, svnurl, extinfo):
@@ -160,6 +140,14 @@ def svn_remove(rootdir, svnurl, extinfo):
                 os.remove(fullpath)
 
 
+def svn_revert(rootdir, svnurl, extinfo):
+    for pp in extinfo:
+        abspath = os.path.join(rootdir, pp[0][1:])
+        os.chdir(abspath)
+        cmd = "svn revert -R %s" % pp[1][1]
+        os.system(cmd)
+
+
 def svn_info(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
@@ -178,11 +166,12 @@ def printHelp():
     print("[info] git svn externals tool")
     print("[usage] git-svn-externals.py subcommand git_svn_show_externals_file")
     print("subcommand")
-    print("    checkout : ")
-    print("    update : ")
-    print("    status : ")
+    print("    checkout|co : ")
+    print("    update|up : ")
+    print("    switch|sw : ")
+    print("    status|st : ")
+    print("    remove|rm : ")
     print("    revert : ")
-    print("    remove : ")
     print("    info : ")
     print("    list : ")
     print("input from file or stdin")
@@ -234,16 +223,18 @@ if __name__ == "__main__":
     #for ll in extinfo:
     #    print(ll)
 
-    if command == "checkout":
+    if command == "checkout" or command == "co":
         svn_checkout(rootdir, svnurl, extinfo)
-    elif command == "update":
+    elif command == "update" or command == "up":
         svn_update(rootdir, svnurl, extinfo)
-    elif command == "status":
+    elif command == "switch" or command == "sw":
+        svn_switch(rootdir, svnurl, extinfo)
+    elif command == "status" or command == "st":
         svn_status(rootdir, svnurl, extinfo)
+    elif command == "remove" or command == "rm":
+        svn_remove(rootdir, svnurl, extinfo)
     elif command == "revert":
         svn_revert(rootdir, svnurl, extinfo)
-    elif command == "remove":
-        svn_remove(rootdir, svnurl, extinfo)
     elif command == "info":
         svn_info(rootdir, svnurl, extinfo)
     elif command == "list":
