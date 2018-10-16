@@ -4,6 +4,7 @@
 
 import os
 import sys
+import shutil
 import subprocess
 
 
@@ -165,14 +166,25 @@ def svn_revert(tardir, svnurl, extinfo):
 
 
 def svn_remove(tardir, svnurl, extinfo):
+    print("remove list:\n")
     for exi in extinfo:
         abspath = os.path.join(tardir, exi[1])
         if not os.path.exists(abspath):
-            print("[error] %s is not exist." % abspath)
             continue
-        cmd = "svn revert -R %s" % abspath
-        #print(cmd)
-        os.system(cmd)
+        print('\t' + abspath)
+
+    ans = raw_input("\nAre you sure remove the list[y/n]?")
+    if ans != 'y' and ans != "yes":
+        return
+
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        if not os.path.exists(abspath):
+            continue
+        if os.path.isdir(abspath):
+            shutil.rmtree(abspath)
+        else:
+            os.remove(abspath)
 
 
 def svn_list(tardir, svnurl, extinfo):
@@ -183,6 +195,19 @@ def svn_list(tardir, svnurl, extinfo):
         abspath = os.path.join(tardir, exi[1])
         print(abspath)
 
+
+def printHelp():
+    print("git-svn-externals.py : git svn externals tools")
+    print("[usage] git-svn-externals.py subcommand PATH")
+    print("subcommand")
+    print("    checkout|co :")
+    print("    switch|sw   :")
+    print("    update|up   :")
+    print("    status|st   :")
+    print("    info        :")
+    print("    revert      :")
+    print("    remove      :")
+    print("    list        :")
 
 
 if __name__ == "__main__":
