@@ -21,3 +21,18 @@ git svn externals simple tool
 # future todo
   * run with svn external a file not a directory.
   * ...
+
+
+
+# 새로운 방식
+
+    $ git svn propget svn:externals PATH
+    $ git svn info PATH
+
+
+
+    $ git-svn-externals subcommand PATH
+    - subcommand : checkout, status, update, revert, info, switch, remove, list
+
+
+    1. git-svn 인가?
