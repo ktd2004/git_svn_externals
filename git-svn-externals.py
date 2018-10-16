@@ -48,13 +48,12 @@ def git_svn_find_root(cur):
 
 
 
-def read_git_svn_show_externals(filepath):
+def read_git_svn_show_externals(inf):
     basedir = ""
     extinfo = []
 
-    f = open(filepath, "r")
     while True:
-        line = f.readline()
+        line = inf.readline()
         if not line: break
 
         line = line.strip()
@@ -66,8 +65,6 @@ def read_git_svn_show_externals(filepath):
         else:
             if basedir != "":
                 extinfo.append([basedir, line.split(' ', 1)])
-
-    f.close()
 
     return extinfo
 
@@ -179,7 +176,8 @@ def svn_list(rootdir, svnurl, extinfo):
 
 def printHelp():
     print("[info] git svn externals tool")
-    print("[usage] git-svn-externals.py subcommand git_svn_show_externals-file")
+    print("[usage] git-svn-externals.py subcommand git_svn_show_externals_file")
+    print("subcommand")
     print("    checkout : ")
     print("    update : ")
     print("    status : ")
@@ -187,15 +185,12 @@ def printHelp():
     print("    remove : ")
     print("    info : ")
     print("    list : ")
+    print("input from file or stdin")
+    print("    git-svn-externals.py subcommand git_svn_show_externals_file")
+    print("    git svn show-externals | git-svn-externals.py subcommand -")
 
 
 
-
-# 명령 형태
-# git-svn-externals.py checkout filename
-# git-svn-externals.py update filename
-# git-svn-externals.py status filename
-# git-svn-externals.py revert filename
 
 if __name__ == "__main__":
 
@@ -220,7 +215,12 @@ if __name__ == "__main__":
     curdir = os.getcwd()
     rootdir = git_svn_find_root(curdir)
     command = sys.argv[1]
-    filepath= sys.argv[2]
+    filepath = sys.argv[2]
+    if filepath == "-":
+        inf = sys.stdin
+    else:
+        inf = open(filepath, "r")
+
 
     #print("svnurl : ", svnurl)
     #print("rootdir : ", rootdir)
@@ -229,7 +229,7 @@ if __name__ == "__main__":
         print("[error] is not git_svn_repo or git_svn_repo_root")
         sys.exit(1)
 
-    extinfo = read_git_svn_show_externals(filepath)
+    extinfo = read_git_svn_show_externals(inf)
 
     #for ll in extinfo:
     #    print(ll)
