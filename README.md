@@ -9,11 +9,15 @@ git svn externals simple tool
     $ git-svn-externals.py checkout git_svn_externals.list
     $ git-svn-externals.py update git_svn_externals.list
     $ git-svn-externals.py status git_svn_externals.list
-    $ git-svn-externals.py revert git_svn_externals.list
+    $ git-svn-externals.py remove git_svn_externals.list
+
+
+    $ git svn show-externals | git-svn-externals.py checkout -
+    $ git svn show-externals | git-svn-externals.py update -
+    $ git svn show-externals | git-svn-externals.py status -
+    $ git svn show-externals | git-svn-externals.py remove -
 
 
 # future todo
-  * run into repo sub directory. 
-  * run from 'git svn show-externals' command
   * run with svn external a file not a directory.
   * ...
