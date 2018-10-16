@@ -1,33 +1,33 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
-# Copyright © 2018 user <user@ubuntu>
-#
-# Distributed under terms of the MIT license.
-import sys
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+
 import os
-import shutil
+import sys
 import subprocess
 
 
 
-## 방법
-# 1. git repo root에서 시작해야함. .git 디렉토리 확인
-# 2. svnurl = git svn info | sed ...
-# 3. checkout인지? update? revert? status? 인지 subcommand 입력
-# 4. git-svn-external 정보 파일 읽기
-# 5. loop를 돌면서 명령 수행
-# 6. cd [0] svn co svnurl+[1] [2]
+def git_find_root(tdir):
+    os.chdir(tdir)
+    curdir = tdir
+    while True:
+        if os.path.isdir(os.path.join(curdir, ".git")):
+            return curdir
+        os.chdir("..")
+        parent = os.path.abspath(os.curdir)
+        if curdir == parent:
+            return ""
+        curdir = parent
 
 
-def git_svn_url(rootdir):
-    os.chdir(rootdir)
-
+def git_svn_url(tdir):
     my_env = os.environ.copy()
     my_env["LANG"] = "C"
 
-    p = subprocess.Popen("git svn info".split(), env=my_env, stdout=subprocess.PIPE)
+    cmd = "git svn info %s" % tdir
+
+    p = subprocess.Popen(cmd.split(), env=my_env, stdout=subprocess.PIPE)
     out, err = p.communicate()
     if err:
         return ""
@@ -37,43 +37,20 @@ def git_svn_url(rootdir):
             return line.split(' ', 1)[1]
 
 
-def git_svn_find_root(cur):
-    rootdir = cur
-    while True:
-        if os.path.isdir(os.path.join(rootdir, ".git")):
-            return rootdir
-        os.chdir("..")
-        parent = os.path.abspath(os.curdir)
-        if rootdir == parent:
-            return ""
-        rootdir = parent
+def git_ls_files(tdir):
+    my_env = os.environ.copy()
+    my_env["LANG"] = "C"
 
+    cmd = "git ls-files %s" % tdir
+    p = subprocess.Popen(cmd.split(), env=my_env, stdout=subprocess.PIPE)
+    out, err = p.communicate()
+    if err:
+        return []
 
-## extinfo struct
-# [0] : base directory in working root directory.
-# [1] : base svn url in svn repository.
-# [2] : target directory in working root directory.
-def read_git_svn_show_externals(inf):
-    basedir = ""
-    extinfo = []
-
-    while True:
-        line = inf.readline()
-        if not line: break
-
-        line = line.strip()
-
-        if line == "":
-            basedir = ""
-        if line.startswith("#"):
-            basedir = line.split(' ', 1)[1]
-        else:
-            if basedir != "":
-                exi = line.split(' ', 1)
-                extinfo.append([basedir, exi[0], exi[1]])
-
-    return extinfo
-
+    dirs = set()
+    for line in out.splitlines():
+        dirs.add(os.path.dirname(line))
+    return list(dirs)
 
 
 def svn_path_normpath(svnpath):
@@ -94,182 +71,179 @@ def svn_path_normpath(svnpath):
     return str.replace(os.sep, '/')
 
 
-def svn_checkout(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
+def git_svn_get_externals(tdir):
+    my_env = os.environ.copy()
+    my_env["LANG"] = "C"
+
+    cmd = "git svn propget svn:externals %s" % tdir
+    FNULL = open(os.devnull, "w")
+    p = subprocess.Popen(cmd.split(), env=my_env, stdout=subprocess.PIPE, stderr=FNULL)
+    out, err = p.communicate()
+    if err:
+        return []
+    
+    extinfo = []
+    for line in out.splitlines():
+        if line:
+            extinfo.append(line.split(' ', 1))
+
+    return extinfo
+
+
+def svn_checkout(tardir, svnurl, extinfo):
+    #print(tardir)
+    #print(svnurl)
+    #print(extinfo)
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        if os.path.exists(abspath):
+            print("[error] %s is already exist." % abspath)
+            continue
+        svnuuu = svn_path_normpath(svnurl + '/' + exi[0])
+        cmd = "svn checkout %s %s" % (svnuuu, abspath)
+        #print(cmd)
+        os.system(cmd)
+
+
+def svn_switch(tardir, svnurl, extinfo):
+    #print(tardir)
+    #print(svnurl)
+    #print(extinfo)
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
         if not os.path.exists(abspath):
-            os.makedirs(abspath)
-        os.chdir(abspath)
-        svnuuu = svn_path_normpath(svnurl + pp[1])
-        cmd = "svn checkout %s %s" % (svnuuu, pp[2])
-        print(cmd)
+            print("[error] %s is not exist." % abspath)
+            continue
+        svnuuu = svn_path_normpath(svnurl + '/' + exi[0])
+        cmd = "svn switch %s %s" % (svnuuu, abspath)
+        #print(cmd)
         os.system(cmd)
 
 
-def svn_update(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        tarpath = pp[2]
-        if not os.path.exists(os.path.join(abspath, tarpath)):
+def svn_update(tardir, svnurl, extinfo):
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        if not os.path.exists(abspath):
+            print("[error] %s is not exist." % abspath)
             continue
-        os.chdir(abspath)
-        cmd = "svn update %s" % tarpath
+        cmd = "svn update %s" % abspath
+        #print(cmd)
         os.system(cmd)
 
 
-def svn_status(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        tarpath = pp[2]
-        if not os.path.exists(os.path.join(abspath, tarpath)):
+def svn_status(tardir, svnurl, extinfo):
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        if not os.path.exists(abspath):
+            print("[error] %s is not exist." % abspath)
             continue
-        os.chdir(abspath)
-        cmd = "svn status %s" % tarpath
+        cmd = "svn status %s" % abspath
+        #print(cmd)
         os.system(cmd)
 
 
-def svn_remove(rootdir, svnurl, extinfo):
-    print("remove list:\n")
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:], pp[2])
-        fullpath = os.path.normpath(abspath)
-        if not os.path.exists(fullpath):
+def svn_info(tardir, svnurl, extinfo):
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        if not os.path.exists(abspath):
+            print("[error] %s is not exist." % abspath)
             continue
-        print('\t' + fullpath)
-
-    ans = raw_input("\nAre you sure remove the list[y/n]?")
-    if ans == 'y' or ans == "yes":
-        for pp in extinfo:
-            abspath = os.path.join(rootdir, pp[0][1:], pp[2])
-            fullpath = os.path.normpath(abspath)
-            if not os.path.exists(fullpath):
-                continue
-            if os.path.isdir(fullpath):
-                shutil.rmtree(fullpath)
-            else:
-                os.remove(fullpath)
-
-
-def svn_switch(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        tarpath = pp[2]
-        if not os.path.exists(os.path.join(abspath, tarpath)):
-            continue
-        os.chdir(abspath)
-        svnuuu = svn_path_normpath(svnurl + pp[1])
-        cmd = "svn switch %s %s" % (svnuuu, tarpath)
+        cmd = "svn info %s" % abspath
+        #print(cmd)
         os.system(cmd)
 
 
-def svn_revert(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        tarpath = pp[2]
-        if not os.path.exists(os.path.join(abspath, tarpath)):
+def svn_revert(tardir, svnurl, extinfo):
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        if not os.path.exists(abspath):
+            print("[error] %s is not exist." % abspath)
             continue
-        os.chdir(abspath)
-        cmd = "svn revert -R %s" % tarpath
+        cmd = "svn revert -R %s" % abspath
+        #print(cmd)
         os.system(cmd)
 
 
-def svn_info(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        abspath = os.path.join(rootdir, pp[0][1:])
-        tarpath = pp[2]
-        if not os.path.exists(os.path.join(abspath, tarpath)):
+def svn_remove(tardir, svnurl, extinfo):
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        if not os.path.exists(abspath):
+            print("[error] %s is not exist." % abspath)
             continue
-        os.chdir(abspath)
-        cmd = "svn info %s" % tarpath
+        cmd = "svn revert -R %s" % abspath
+        #print(cmd)
         os.system(cmd)
 
 
-def svn_list(rootdir, svnurl, extinfo):
-    for pp in extinfo:
-        path = os.path.normpath(os.path.join(rootdir, pp[0], pp[2]))
-        if not os.path.exists(path):
-            continue
-        print(path)
-
-
-def printHelp():
-    print("[info] git svn externals tool")
-    print("[usage] git-svn-externals.py subcommand git_svn_show_externals_file")
-    print("subcommand")
-    print("    checkout|co : ")
-    print("    update|up : ")
-    print("    status|st : ")
-    print("    remove|rm : ")
-    print("    switch|sw : ")
-    print("    revert : ")
-    print("    info : ")
-    print("    list : ")
-    print("input from file or stdin")
-    print("    git-svn-externals.py subcommand git_svn_show_externals_file")
-    print("    git svn show-externals | git-svn-externals.py subcommand -")
-
+def svn_list(tardir, svnurl, extinfo):
+    #print(tardir)
+    #print(svnurl)
+    #print(extinfo)
+    for exi in extinfo:
+        abspath = os.path.join(tardir, exi[1])
+        print(abspath)
 
 
 
 if __name__ == "__main__":
-
-    # 선행 조건 체크
-    # parameter count
-    # git repo and root
-
     argc = len(sys.argv)
     if argc == 1:
         printHelp()
         sys.exit(0)
 
     if argc != 3:
-        print("[error] invalid argument")
-        sys.exit(1)
-
-    curdir = os.getcwd()
-    rootdir = git_svn_find_root(curdir)
-    svnurl = git_svn_url(rootdir)
-    if not svnurl:
-        print("[error] git svn error")
+        print("[error] invalid argument count.")
         sys.exit(1)
 
     command = sys.argv[1]
-    filepath = sys.argv[2]
-    if filepath == "-":
-        inf = sys.stdin
-    else:
-        inf = open(filepath, "r")
-
-
-    #print("rootdir : ", rootdir)
-    #print("svnurl : ", svnurl)
-
-    if not svnurl or not rootdir:
-        print("[error] is not git_svn_repo or git_svn_repo_root")
+    tardir = os.path.abspath(sys.argv[2])
+    #print("tardir : ", tardir)
+    if not os.path.exists(tardir):
+        print("[error] target directory is not exist.")
         sys.exit(1)
 
-    extinfo = read_git_svn_show_externals(inf)
+    curdir = os.getcwd()
+    #print("curdir : ", curdir)
+    rootdir = git_find_root(tardir)
+    #print("rootdir : ", rootdir)
+    if not rootdir:
+        print("[error] is not git repository.")
+        sys.exit(1)
 
-    #for ll in extinfo:
-    #    print(ll)
+    svnrooturl = git_svn_url(rootdir)
+    #print("svnrooturl : ", svnrooturl)
+    svnurl = git_svn_url(tardir)
+    #print("svnurl : ", svnurl)
+    if not svnrooturl or not svnurl:
+        print("[error] git svn info command error.")
+        sys.exit(1)
 
-    if command == "checkout" or command == "co":
-        svn_checkout(rootdir, svnurl, extinfo)
-    elif command == "update" or command == "up":
-        svn_update(rootdir, svnurl, extinfo)
-    elif command == "status" or command == "st":
-        svn_status(rootdir, svnurl, extinfo)
-    elif command == "remove" or command == "rm":
-        svn_remove(rootdir, svnurl, extinfo)
-    elif command == "switch" or command == "sw":
-        svn_switch(rootdir, svnurl, extinfo)
-    elif command == "revert":
-        svn_revert(rootdir, svnurl, extinfo)
-    elif command == "info":
-        svn_info(rootdir, svnurl, extinfo)
-    elif command == "list":
-        svn_list(rootdir, svnurl, extinfo)
-    else:
-        print("[error] invalid subcommand")
+    dirs = git_ls_files(tardir)
+    #print(dirs)
+    for dir in dirs:
+        extinfo = git_svn_get_externals(dir)
+        #print(extinfo)
+        if not extinfo:
+            continue
+
+        if command in ["checkout", "co"]:
+            svn_checkout(dir, svnurl, extinfo)
+        elif command in ["switch", "sw"]:
+            svn_switch(dir, svnurl, extinfo)
+        elif command in ["update", "up"]:
+            svn_update(dir, svnurl, extinfo)
+        elif command in ["status", "st"]:
+            svn_status(dir, svnurl, extinfo)
+        elif command in ["info"]:
+            svn_info(dir, svnurl, extinfo)
+        elif command in ["revert"]:
+            svn_revert(dir, svnurl, extinfo)
+        elif command in ["remove"]:
+            svn_remove(dir, svnurl, extinfo)
+        elif command in ["list"]:
+            svn_list(dir, svnurl, extinfo)
+        else:
+            print("[error] invalid subcommand.")
+            sys.exit(1)
 
     sys.exit(0)
