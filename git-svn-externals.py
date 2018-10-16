@@ -21,7 +21,9 @@ import subprocess
 # 6. cd [0] svn co svnurl+[1] [2]
 
 
-def git_svn_url():
+def git_svn_url(rootdir):
+    os.chdir(rootdir)
+
     my_env = os.environ.copy()
     my_env["LANG"] = "C"
 
@@ -96,6 +98,7 @@ def svn_checkout(rootdir, svnurl, extinfo):
         os.chdir(abspath)
         svnuuu = svn_path_normpath(svnurl + pp[1][0])
         cmd = "svn checkout %s %s" % (svnuuu, pp[1][1])
+        print(cmd)
         os.system(cmd)
 
 
@@ -198,13 +201,13 @@ if __name__ == "__main__":
         print("[error] invalid argument")
         sys.exit(1)
 
-    svnurl = git_svn_url()
+    curdir = os.getcwd()
+    rootdir = git_svn_find_root(curdir)
+    svnurl = git_svn_url(rootdir)
     if not svnurl:
         print("[error] git svn error")
         sys.exit(1)
 
-    curdir = os.getcwd()
-    rootdir = git_svn_find_root(curdir)
     command = sys.argv[1]
     filepath = sys.argv[2]
     if filepath == "-":
