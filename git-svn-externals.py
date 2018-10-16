@@ -91,6 +91,8 @@ def svn_path_normpath(svnpath):
 def svn_checkout(rootdir, svnurl, extinfo):
     for pp in extinfo:
         abspath = os.path.join(rootdir, pp[0][1:])
+        if not os.path.exists(abspath):
+            os.makedirs(abspath)
         os.chdir(abspath)
         svnuuu = svn_path_normpath(svnurl + pp[1][0])
         cmd = "svn checkout %s %s" % (svnuuu, pp[1][1])
