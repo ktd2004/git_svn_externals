@@ -10,6 +10,7 @@ import subprocess
 
 
 def git_find_root(tdir):
+    # os.chdir을 사용하지 않고, os.path.isdir만 사용해서 체크한다.
     curdir = tdir
     while True:
         if os.path.isdir(os.path.join(curdir, ".git")):
@@ -21,6 +22,9 @@ def git_find_root(tdir):
 
 
 def git_svn_url(tdir):
+    # 경로를 파라메터로 한 git svn 명령(git svn info abcdef)의 경우에
+    # windows의 msys2 환경에서 에러가 발생한다.
+    # 따라서 "os.chdir + 파라메터없는 git svn info" 명령으로 대체한다.
     os.chdir(tdir)
 
     my_env = os.environ.copy()
@@ -72,6 +76,9 @@ def svn_path_normpath(svnpath):
 
 
 def git_svn_get_externals(tdir):
+    # 경로를 파라메터로 한 git svn 명령(git svn info abcdef)의 경우에
+    # windows의 msys2 환경에서 에러가 발생한다.
+    # 따라서 "os.chdir + 파라메터없는 git svn info" 명령으로 대체한다.
     os.chdir(tdir)
 
     my_env = os.environ.copy()
@@ -240,9 +247,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    print("curdir : ", curdir)
-    print("tardir : ", tardir)
-    print("rootdir : ", rootdir)
+    #print("curdir : ", curdir)
+    #print("tardir : ", tardir)
+    #print("rootdir : ", rootdir)
 
 
     svnurl = git_svn_url(rootdir)
@@ -250,15 +257,16 @@ if __name__ == "__main__":
         print("[error] git svn info command error.")
         sys.exit(1)
 
+    # svnurl에 상태경로를 더해서 실제 svnurl 경로를 구한다.
     svnurl = svn_path_normpath(svnurl + tardir.replace(rootdir, ""))
-    print("svnurl : ", svnurl)
+    #print("svnurl : ", svnurl)
 
     dirs = git_ls_files(tardir)
-    print(dirs)
+    #print(dirs)
     for dir in dirs:
         tdir = os.path.join(tardir, dir)
         extinfo = git_svn_get_externals(tdir)
-        print(extinfo)
+        #print(extinfo)
         if not extinfo:
             continue
 
