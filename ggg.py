@@ -79,6 +79,8 @@ def git_svn_get_externals(tdir):
     # 경로를 파라메터로 한 git svn 명령(git svn info abcdef)의 경우에
     # windows의 msys2 환경에서 에러가 발생한다.
     # 따라서 "os.chdir + 파라메터없는 git svn info" 명령으로 대체한다.
+    if not os.path.exists(tdir):
+        return []
     os.chdir(tdir)
 
     my_env = os.environ.copy()
