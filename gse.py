@@ -234,23 +234,23 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    #print("curdir : ", curdir)
-    #print("targetdir : ", args.targetdir)
-    #print("rootdir : ", rootdir)
+    print("curdir : ", curdir)
+    print("targetdir : ", args.targetdir)
+    print("rootdir : ", rootdir)
 
 
 
     os.chdir(rootdir)
     svnurl = git_svn_url(rootdir)
-    #print("svnurl : ", svnurl)
+    print("svnurl : ", svnurl)
     if not svnurl:
         print("[error] git svn info command error.")
         sys.exit(1)
     os.chdir(curdir)
 
     # svnurl에 상태경로를 더해서 실제 svnurl 경로를 구한다.
-    svnurl = svn_path_normpath(svnurl + '/' + args.targetdir.replace(rootdir, ""))
-    #print("svnurl : ", svnurl)
+    svnurl = svn_path_normpath(svnurl + '/' + os.path.abspath(args.targetdir).replace(os.path.abspath(rootdir), ""))
+    print("svnurl : ", svnurl)
 
 
     if args.extfile != '':
@@ -268,7 +268,7 @@ if __name__ == "__main__":
         dirs = git_ls_files()
     else:
         dirs = ['']
-    #print(dirs)
+    print(dirs)
 
     for dir in dirs:
         tdir = os.path.join(curdir, args.targetdir, dir)
