@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 
+import argparse
 import os
 import sys
 import shutil
@@ -22,11 +23,6 @@ def git_find_root(tdir):
 
 
 def git_svn_url(tdir):
-    # 경로를 파라메터로 한 git svn 명령(git svn info abcdef)의 경우에
-    # windows의 msys2 환경에서 에러가 발생한다.
-    # 따라서 "os.chdir + 파라메터없는 git svn info" 명령으로 대체한다.
-    os.chdir(tdir)
-
     my_env = os.environ.copy()
     my_env["LANG"] = "C"
 
@@ -40,15 +36,14 @@ def git_svn_url(tdir):
             return line.split(' ', 1)[1]
 
 
-def git_ls_files(tdir):
-    os.chdir(tdir)
-
+def git_ls_files():
     my_env = os.environ.copy()
     my_env["LANG"] = "C"
 
     p = subprocess.Popen("git ls-files".split(), env=my_env, stdout=subprocess.PIPE)
     out, err = p.communicate()
     if err:
+        print("[error] p.communicate error")
         return []
 
     dirs = set()
@@ -75,14 +70,7 @@ def svn_path_normpath(svnpath):
     return str.replace(os.sep, '/')
 
 
-def git_svn_get_externals(tdir):
-    # 경로를 파라메터로 한 git svn 명령(git svn info abcdef)의 경우에
-    # windows의 msys2 환경에서 에러가 발생한다.
-    # 따라서 "os.chdir + 파라메터없는 git svn info" 명령으로 대체한다.
-    if not os.path.exists(tdir):
-        return []
-    os.chdir(tdir)
-
+def git_svn_get_externals():
     my_env = os.environ.copy()
     my_env["LANG"] = "C"
 
@@ -90,6 +78,7 @@ def git_svn_get_externals(tdir):
     p = subprocess.Popen("git svn propget svn:externals".split(), env=my_env, stdout=subprocess.PIPE, stderr=FNULL)
     out, err = p.communicate()
     if err:
+        print("[error] p.communicate error.")
         return []
     
     extinfo = []
@@ -207,7 +196,7 @@ def svn_list(tardir, svnurl, extinfo):
 
 def printHelp():
     print("gse.py : git svn externals tools")
-    print("[usage] gse.py subcommand [PATH]")
+    print("[usage] gse.py subcommand path")
     print("subcommand")
     print("    checkout|co :")
     print("    switch|sw   :")
@@ -220,21 +209,16 @@ def printHelp():
 
 
 if __name__ == "__main__":
-    curdir = os.getcwd()
-    argc = len(sys.argv)
-    if argc == 1:
-        printHelp()
-        sys.exit(0)
-    elif argc == 2:
-        tardir = curdir
-    elif argc == 3:
-        tardir = os.path.abspath(sys.argv[2])
-    else:
-        print("[error] invalid argument count.")
-        sys.exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--recursive', action='store_true')
+    parser.add_argument('command', help='{checkout|switch|update|status|info|revert|remove|list}')
+    parser.add_argument('targetdir')
 
-    command = sys.argv[1]
-    if not os.path.exists(tardir):
+    args = parser.parse_args()
+
+    curdir = os.getcwd()
+
+    if not os.path.exists(args.targetdir):
         print("[error] target directory is not exist.")
         sys.exit(1)
 
@@ -243,50 +227,67 @@ if __name__ == "__main__":
         print("[error] is not git repository.")
         sys.exit(1)
 
-    rootdir = git_find_root(tardir)
+    rootdir = git_find_root(args.targetdir)
     if not rootdir:
         print("[error] is not git repository.")
         sys.exit(1)
 
 
     #print("curdir : ", curdir)
-    #print("tardir : ", tardir)
+    #print("targetdir : ", args.targetdir)
     #print("rootdir : ", rootdir)
 
 
+
+    os.chdir(rootdir)
     svnurl = git_svn_url(rootdir)
+    #print("svnurl : ", svnurl)
     if not svnurl:
         print("[error] git svn info command error.")
         sys.exit(1)
+    os.chdir(curdir)
 
     # svnurl에 상태경로를 더해서 실제 svnurl 경로를 구한다.
-    svnurl = svn_path_normpath(svnurl + tardir.replace(rootdir, ""))
+    svnurl = svn_path_normpath(svnurl + '/' + args.targetdir.replace(rootdir, ""))
     #print("svnurl : ", svnurl)
 
-    dirs = git_ls_files(tardir)
+    os.chdir(args.targetdir)
+
+    dirs = ['']
+    if args.recursive:
+        dirs = git_ls_files()
+    else:
+        dirs = ['']
     #print(dirs)
+
     for dir in dirs:
-        tdir = os.path.join(tardir, dir)
-        extinfo = git_svn_get_externals(tdir)
+        tdir = os.path.join(curdir, args.targetdir, dir)
+
+        try:
+            os.chdir(tdir)
+        except:
+            continue
+
+        extinfo = git_svn_get_externals()
         #print(extinfo)
         if not extinfo:
             continue
 
-        if command in ["checkout", "co"]:
+        if args.command in ["checkout", "co"]:
             svn_checkout(tdir, svnurl, extinfo)
-        elif command in ["switch", "sw"]:
+        elif args.command in ["switch", "sw"]:
             svn_switch(tdir, svnurl, extinfo)
-        elif command in ["update", "up"]:
+        elif args.command in ["update", "up"]:
             svn_update(tdir, svnurl, extinfo)
-        elif command in ["status", "st"]:
+        elif args.command in ["status", "st"]:
             svn_status(tdir, svnurl, extinfo)
-        elif command in ["info"]:
+        elif args.command in ["info"]:
             svn_info(tdir, svnurl, extinfo)
-        elif command in ["revert"]:
+        elif args.command in ["revert"]:
             svn_revert(tdir, svnurl, extinfo)
-        elif command in ["remove"]:
+        elif args.command in ["remove"]:
             svn_remove(tdir, svnurl, extinfo)
-        elif command in ["list"]:
+        elif args.command in ["list"]:
             svn_list(tdir, svnurl, extinfo)
         else:
             print("[error] invalid subcommand.")
