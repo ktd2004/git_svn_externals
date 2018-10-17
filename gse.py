@@ -89,6 +89,20 @@ def git_svn_get_externals():
     return extinfo
 
 
+def git_svn_get_extfile(inf):
+    extinfo = []
+    while True:
+        line = inf.readline()
+
+        if not line: break
+
+        line = line.strip()
+        if line:
+            extinfo.append(line.split(' ', 1))
+
+    return extinfo
+
+
 def svn_checkout(tardir, svnurl, extinfo):
     #print(tardir)
     #print(svnurl)
@@ -194,25 +208,12 @@ def svn_list(tardir, svnurl, extinfo):
         print(abspath)
 
 
-def printHelp():
-    print("gse.py : git svn externals tools")
-    print("[usage] gse.py subcommand path")
-    print("subcommand")
-    print("    checkout|co :")
-    print("    switch|sw   :")
-    print("    update|up   :")
-    print("    status|st   :")
-    print("    info        :")
-    print("    revert      :")
-    print("    remove      :")
-    print("    list        :")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--recursive', action='store_true')
     parser.add_argument('command', help='{checkout|switch|update|status|info|revert|remove|list}')
     parser.add_argument('targetdir')
+    parser.add_argument('extfile', nargs='?', default='')
 
     args = parser.parse_args()
 
@@ -251,10 +252,18 @@ if __name__ == "__main__":
     svnurl = svn_path_normpath(svnurl + '/' + args.targetdir.replace(rootdir, ""))
     #print("svnurl : ", svnurl)
 
+
+    if args.extfile == '-':
+        extf = sys.stdin
+    else:
+        extf = open(args.extfile, "r")
+
+
     os.chdir(args.targetdir)
 
+
     dirs = ['']
-    if args.recursive:
+    if args.recursive and args.extfile == '':
         dirs = git_ls_files()
     else:
         dirs = ['']
@@ -268,7 +277,10 @@ if __name__ == "__main__":
         except:
             continue
 
-        extinfo = git_svn_get_externals()
+        if args.extfile == '':
+            extinfo = git_svn_get_externals()
+        else:
+            extinfo = git_svn_get_extfile(extf)
         #print(extinfo)
         if not extinfo:
             continue
