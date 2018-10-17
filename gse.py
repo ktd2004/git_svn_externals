@@ -253,10 +253,11 @@ if __name__ == "__main__":
     #print("svnurl : ", svnurl)
 
 
-    if args.extfile == '-':
-        extf = sys.stdin
-    else:
-        extf = open(args.extfile, "r")
+    if args.extfile != '':
+        if args.extfile == '-':
+            extf = sys.stdin
+        else:
+            extf = open(args.extfile, "r")
 
 
     os.chdir(args.targetdir)
