@@ -22,7 +22,7 @@ def git_find_root(tdir):
         curdir = parent
 
 
-def git_svn_url(tdir):
+def git_svn_url():
     my_env = os.environ.copy()
     my_env["LANG"] = "C"
 
@@ -217,39 +217,40 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    curdir = os.getcwd()
+    CURDIR = os.getcwd()
+    TARGETDIR = args.targetdir
 
-    if not os.path.exists(args.targetdir):
+    if not os.path.exists(TARGETDIR):
         print("[error] target directory is not exist.")
         sys.exit(1)
 
-    rootdir = git_find_root(curdir)
-    if not rootdir:
+    ROOTDIR = git_find_root(CURDIR)
+    if not ROOTDIR:
         print("[error] is not git repository.")
         sys.exit(1)
 
-    rootdir = git_find_root(args.targetdir)
-    if not rootdir:
+    ROOTDIR = git_find_root(TARGETDIR)
+    if not ROOTDIR:
         print("[error] is not git repository.")
         sys.exit(1)
 
 
-    #print("curdir : ", curdir)
-    #print("targetdir : ", args.targetdir)
-    #print("rootdir : ", rootdir)
+    #print("CURDIR : ", CURDIR)
+    #print("TARGETDIR : ", TARGETDIR)
+    #print("ROOTDIR : ", ROOTDIR)
 
 
 
-    os.chdir(rootdir)
-    svnurl = git_svn_url(rootdir)
-    #print("svnurl : ", svnurl)
-    if not svnurl:
+    os.chdir(ROOTDIR)
+    SVNROOTURL = git_svn_url()
+    #print("SVNROOTURL : ", SVNROOTURL)
+    if not SVNROOTURL:
         print("[error] git svn info command error.")
         sys.exit(1)
-    os.chdir(curdir)
+    os.chdir(CURDIR)
 
     # svnurl에 상태경로를 더해서 실제 svnurl 경로를 구한다.
-    svnurl = svn_path_normpath(svnurl + '/' + os.path.abspath(args.targetdir).replace(os.path.abspath(rootdir), ""))
+    svnurl = svn_path_normpath(svnurl + '/' + os.path.abspath(TARGETDIR).replace(os.path.abspath(rootdir), ""))
     #print("svnurl : ", svnurl)
 
 
@@ -260,7 +261,7 @@ if __name__ == "__main__":
             extf = open(args.extfile, "r")
 
 
-    os.chdir(args.targetdir)
+    os.chdir(TARGETDIR)
 
 
     dirs = ['']
@@ -271,7 +272,7 @@ if __name__ == "__main__":
     #print(dirs)
 
     for dir in dirs:
-        tdir = os.path.join(curdir, args.targetdir, dir)
+        tdir = os.path.join(CURDIR, TARGETDIR, dir)
 
         try:
             os.chdir(tdir)
