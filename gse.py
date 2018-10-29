@@ -233,8 +233,11 @@ if __name__ == "__main__":
     if not ROOTDIR:
         print("[error] is not git repository.")
         sys.exit(1)
-    ROOTDIR = os.path.abspath(ROOTDIR)
 
+
+    CURDIR = os.path.abspath(CURDIR)
+    TARGETDIR = os.path.abspath(TARGETDIR)
+    ROOTDIR = os.path.abspath(ROOTDIR)
 
     #print("CURDIR : ", CURDIR)
     #print("TARGETDIR : ", TARGETDIR)
@@ -286,7 +289,7 @@ if __name__ == "__main__":
 
 
         # svnurl에 상태경로를 더해서 실제 svnurl 경로를 구한다.
-        svnurl = svn_path_normpath(svnurl + '/' + os.path.abspath(tdir).replace(os.path.abspath(ROOTDIR), ""))
+        svnurl = svn_path_normpath(SVNROOTURL + '/' + os.path.abspath(tdir).replace(os.path.abspath(ROOTDIR), ""))
         #print("svnurl : ", svnurl)
 
 
