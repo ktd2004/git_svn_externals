@@ -212,13 +212,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--recursive', action='store_true')
     parser.add_argument('command', help='{checkout|switch|update|status|info|revert|remove|list}')
-    parser.add_argument('targetdir')
+    parser.add_argument('targetdir', nargs='?', default='')
     parser.add_argument('extfile', nargs='?', default='')
 
     args = parser.parse_args()
 
     CURDIR = os.getcwd()
-    TARGETDIR = args.targetdir
+    TARGETDIR = "."
+    if args.targetdir != '':
+        TARGETDIR = args.targetdir
 
     if not os.path.exists(TARGETDIR):
         print("[error] target directory is not exist.")
