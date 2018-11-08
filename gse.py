@@ -307,9 +307,9 @@ if __name__ == "__main__":
             svn_info(tdir, svnurl, extinfo)
         elif args.command in ["revert"]:
             svn_revert(tdir, svnurl, extinfo)
-        elif args.command in ["remove"]:
+        elif args.command in ["remove", "rm"]:
             svn_remove(tdir, svnurl, extinfo)
-        elif args.command in ["list"]:
+        elif args.command in ["list", "ls"]:
             svn_list(tdir, svnurl, extinfo)
         else:
             print("[error] invalid subcommand.")
