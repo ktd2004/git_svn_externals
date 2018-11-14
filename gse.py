@@ -204,8 +204,9 @@ def svn_list(tardir, svnurl, extinfo):
     #print(svnurl)
     #print(extinfo)
     for exi in extinfo:
-        abspath = os.path.join(tardir, exi[1])
-        print(abspath)
+        #abspath = os.path.join(tardir, exi[1])
+        #print(abspath)
+        print(exi[1])
 
 
 if __name__ == "__main__":
