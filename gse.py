@@ -212,7 +212,7 @@ def svn_list(TDIR, tardir, svnurl, extinfo):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--recursive', action='store_true')
-    parser.add_argument('command', help='{checkout|switch|update|status|info|revert|remove|list}')
+    parser.add_argument('command', help='{checkout[co]|switch[sw]|update[up]|status[st]|info|revert|remove[rm]|list[ls]}')
     parser.add_argument('targetdir', nargs='?', default='')
     parser.add_argument('extfile', nargs='?', default='')
 
