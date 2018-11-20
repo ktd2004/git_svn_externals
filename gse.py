@@ -199,14 +199,14 @@ def svn_remove(tardir, svnurl, extinfo):
             os.remove(abspath)
 
 
-def svn_list(tardir, svnurl, extinfo):
+def svn_list(TDIR, tardir, svnurl, extinfo):
     #print(tardir)
     #print(svnurl)
     #print(extinfo)
     for exi in extinfo:
-        #abspath = os.path.join(tardir, exi[1])
-        #print(abspath)
-        print(exi[1])
+        abspath = os.path.join(tardir, exi[1])
+        print(os.path.relpath(abspath, TDIR))
+        #print(exi[1])
 
 
 if __name__ == "__main__":
@@ -311,7 +311,7 @@ if __name__ == "__main__":
         elif args.command in ["remove", "rm"]:
             svn_remove(tdir, svnurl, extinfo)
         elif args.command in ["list", "ls"]:
-            svn_list(tdir, svnurl, extinfo)
+            svn_list(TARGETDIR, tdir, svnurl, extinfo)
         else:
             print("[error] invalid subcommand.")
             sys.exit(1)
