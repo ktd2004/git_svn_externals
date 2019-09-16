@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
+# vim: set ts=4 sts=4 sw=4 ai si sta bs=2:
+
 
 import argparse
 import os
@@ -8,6 +10,8 @@ import sys
 import shutil
 import subprocess
 
+
+EXT_FILE = ".gse.py.list"
 
 
 def git_find_root(tdir):
@@ -89,17 +93,25 @@ def git_svn_get_externals():
     return extinfo
 
 
-def git_svn_get_extfile(inf):
+def SaveExtInfo(extinfo):
+    with open(EXT_FILE, "wt") as f:
+        for exi in extinfo:
+            print(exi)
+            if extinfo:
+                line = "%s %s\n" % (exi[0], exi[1])
+                f.write(line)
+
+
+def LoadExtInfo():
     extinfo = []
-    while True:
-        line = inf.readline()
-
-        if not line: break
-
-        line = line.strip()
-        if line:
-            extinfo.append(line.split(' ', 1))
-
+    with open(EXT_FILE, "rt") as f:
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            line = line.strip()
+            if line:
+                extinfo.append(line.split(' ', 1))
     return extinfo
 
 
@@ -211,12 +223,13 @@ def svn_list(TDIR, tardir, svnurl, extinfo):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', '--recursive', action='store_true')
+    parser.add_argument('-r', '--recursive', help="recursive", action='store_true')
+    parser.add_argument('-u', '--update', help="update .gse.py.list file", action='store_true')
     parser.add_argument('command', help='{checkout[co]|switch[sw]|update[up]|status[st]|info|revert|remove[rm]|list[ls]}')
     parser.add_argument('targetdir', nargs='?', default='')
-    parser.add_argument('extfile', nargs='?', default='')
 
     args = parser.parse_args()
+
 
     CURDIR = os.getcwd()
     TARGETDIR = "."
@@ -256,19 +269,11 @@ if __name__ == "__main__":
     os.chdir(CURDIR)
 
 
-
-    if args.extfile != '':
-        if args.extfile == '-':
-            extf = sys.stdin
-        else:
-            extf = open(args.extfile, "r")
-
-
     os.chdir(TARGETDIR)
 
 
     dirs = ['']
-    if args.recursive and args.extfile == '':
+    if args.recursive:
         dirs = git_ls_files()
     else:
         dirs = ['']
@@ -282,14 +287,15 @@ if __name__ == "__main__":
         except:
             continue
 
-        if args.extfile == '':
+        if not os.path.exists(EXT_FILE) or args.update:
             extinfo = git_svn_get_externals()
+            SaveExtInfo(extinfo)
         else:
-            extinfo = git_svn_get_extfile(extf)
-        #print(extinfo)
+            extinfo = LoadExtInfo()
         if not extinfo:
             continue
 
+        #print(extinfo)
 
         # svnurl에 상태경로를 더해서 실제 svnurl 경로를 구한다.
         svnurl = svn_path_normpath(SVNROOTURL + '/' + os.path.abspath(tdir).replace(os.path.abspath(ROOTDIR), ""))
